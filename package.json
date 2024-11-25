@@ -15,7 +15,8 @@
     "migrate": "prisma migrate deploy",
     "seed": "node scripts/seed.js",
     "init-db": "node scripts/init-db.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && npm run build",
+    "heroku-postbuild": "npm run build"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",

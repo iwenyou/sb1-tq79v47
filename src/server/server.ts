@@ -33,27 +33,24 @@ app.use('/api/catalog', catalogRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/db-status', dbStatusRouter);
 
-// API error handler for JSON parsing errors
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err instanceof SyntaxError && 'body' in err) {
-    return res.status(400).json({ error: 'Invalid JSON' });
-  }
-  next(err);
-});
-
-// API 404 handler
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
-});
-
-// Static file serving and client-side routing
+// Static file serving and client-side routing for production
 if (process.env.NODE_ENV === 'production') {
+  // Serve static files
   app.use(express.static(path.join(__dirname, '../../dist')));
   
+  // Handle API routes first
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
+  });
+
+  // Handle client-side routing
   app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api/')) {
-      res.sendFile(path.join(__dirname, '../../dist/index.html'));
-    }
+    res.sendFile(path.join(__dirname, '../../dist/index.html'));
+  });
+} else {
+  // Development 404 handler for API routes
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
   });
 }
 
