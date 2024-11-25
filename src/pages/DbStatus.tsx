@@ -19,6 +19,10 @@ export function DbStatus() {
       setRefreshing(true);
       const token = localStorage.getItem('token');
       
+      if (!token) {
+        throw new Error('Please log in to view database status');
+      }
+
       const response = await fetch('/api/db-status', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -28,14 +32,25 @@ export function DbStatus() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          response.status === 401 
-            ? 'Please log in to view database status' 
-            : 'Failed to fetch database status'
-        );
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch database status');
+        } else {
+          throw new Error('Failed to fetch database status');
+        }
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response format');
       }
 
       const data = await response.json();
+      if (!data || !Array.isArray(data.tables)) {
+        throw new Error('Invalid data format');
+      }
+
       setTables(data.tables.map((t: any) => ({ ...t, isExpanded: false })));
       setError(null);
     } catch (err) {
