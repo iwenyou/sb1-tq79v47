@@ -10,6 +10,7 @@ import { QuoteTemplate } from './pages/QuoteTemplate';
 import { QuoteView } from './pages/QuoteView';
 import { QuoteEdit } from './pages/QuoteEdit';
 import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { ClientQuoteView } from './pages/ClientQuoteView';
 import { NotFound } from './pages/NotFound';
 import { Orders } from './pages/Orders';
@@ -26,6 +27,10 @@ export function App() {
         <Route path="/client/quote/:id" element={<ClientQuoteView />} />
         <Route path="/404" element={<NotFound />} />
         
+        {/* Auth Routes - No Layout */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
         {/* Admin Routes with Layout */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
@@ -40,7 +45,6 @@ export function App() {
           <Route path="quotes/:id/view" element={<QuoteView />} />
           <Route path="quotes/:id/edit" element={<QuoteEdit />} />
           <Route path="quote-template" element={<QuoteTemplate />} />
-          <Route path="login" element={<Login />} />
           <Route path="db-status" element={<DbStatus />} />
         </Route>
       </Routes>

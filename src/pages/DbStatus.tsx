@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
+import { ArrowDown, ArrowUp, RefreshCw, LogIn } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface TableData {
   name: string;
@@ -13,6 +14,7 @@ export function DbStatus() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const navigate = useNavigate();
 
   const fetchDatabaseStatus = async () => {
     try {
@@ -32,6 +34,11 @@ export function DbStatus() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token'); // Clear invalid token
+          throw new Error('Session expired. Please log in again.');
+        }
+
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const errorData = await response.json();
@@ -66,6 +73,10 @@ export function DbStatus() {
     fetchDatabaseStatus();
   }, []);
 
+  const handleLogin = () => {
+    navigate('/login', { state: { returnUrl: '/db-status' } });
+  };
+
   const toggleTableExpansion = (index: number) => {
     setTables(prevTables =>
       prevTables.map((table, i) =>
@@ -88,6 +99,24 @@ export function DbStatus() {
     );
   }
 
+  if (error?.includes('Please log in') || error?.includes('Session expired')) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Authentication Required</h1>
+          <p className="text-gray-600 mb-8">{error}</p>
+          <button
+            onClick={handleLogin}
+            className="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            <LogIn className="h-5 w-5 mr-2" />
+            Log In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
@@ -105,7 +134,7 @@ export function DbStatus() {
         </button>
       </div>
 
-      {error ? (
+      {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -119,69 +148,69 @@ export function DbStatus() {
             </div>
           </div>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {tables.map((table, index) => (
-            <div key={table.name} className="bg-white shadow rounded-lg overflow-hidden">
-              <div
-                className="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
-                onClick={() => toggleTableExpansion(index)}
-              >
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">{table.name}</h2>
-                  <p className="text-sm text-gray-500">{table.count} records</p>
-                </div>
-                {table.isExpanded ? (
-                  <ArrowUp className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <ArrowDown className="h-5 w-5 text-gray-400" />
-                )}
-              </div>
+      )}
 
-              {table.isExpanded && (
-                <div className="border-t border-gray-200">
-                  {table.data.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            {Object.keys(table.data[0]).map((key) => (
-                              <th
-                                key={key}
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                              >
-                                {key}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {table.data.map((row, rowIndex) => (
-                            <tr key={rowIndex}>
-                              {Object.entries(row).map(([key, value]) => (
-                                <td
-                                  key={key}
-                                  className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-900 font-mono"
-                                >
-                                  {renderValue(value)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="px-6 py-4 text-sm text-gray-500 text-center">
-                      No records found
-                    </div>
-                  )}
-                </div>
+      <div className="space-y-6">
+        {tables.map((table, index) => (
+          <div key={table.name} className="bg-white shadow rounded-lg overflow-hidden">
+            <div
+              className="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
+              onClick={() => toggleTableExpansion(index)}
+            >
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{table.name}</h2>
+                <p className="text-sm text-gray-500">{table.count} records</p>
+              </div>
+              {table.isExpanded ? (
+                <ArrowUp className="h-5 w-5 text-gray-400" />
+              ) : (
+                <ArrowDown className="h-5 w-5 text-gray-400" />
               )}
             </div>
-          ))}
-        </div>
-      )}
+
+            {table.isExpanded && (
+              <div className="border-t border-gray-200">
+                {table.data.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {Object.keys(table.data[0]).map((key) => (
+                            <th
+                              key={key}
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            >
+                              {key}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {table.data.map((row, rowIndex) => (
+                          <tr key={rowIndex}>
+                            {Object.entries(row).map(([key, value]) => (
+                              <td
+                                key={key}
+                                className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-900 font-mono"
+                              >
+                                {renderValue(value)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="px-6 py-4 text-sm text-gray-500 text-center">
+                    No records found
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
