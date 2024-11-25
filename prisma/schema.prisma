@@ -1,0 +1,155 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quotes    Quote[]
+  orders    Order[]
+}
+
+model Quote {
+  id                  String    @id @default(uuid())
+  clientName          String
+  email               String
+  phone               String
+  projectName         String
+  installationAddress String
+  status              String
+  total               Float
+  adjustmentType      String?
+  adjustmentPercentage Float?
+  adjustedTotal       Float?
+  spaces              Space[]
+  order               Order?
+  userId              String
+  user                User      @relation(fields: [userId], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Space {
+  id      String        @id @default(uuid())
+  name    String
+  quoteId String
+  quote   Quote         @relation(fields: [quoteId], references: [id])
+  items   CabinetItem[]
+}
+
+model CabinetItem {
+  id        String   @id @default(uuid())
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  material  String?
+  width     Float
+  height    Float
+  depth     Float
+  price     Float
+  spaceId   String
+  space     Space    @relation(fields: [spaceId], references: [id])
+}
+
+model Order {
+  id                  String    @id @default(uuid())
+  quoteId             String    @unique
+  quote               Quote     @relation(fields: [quoteId], references: [id])
+  clientName          String
+  email               String
+  phone               String
+  projectName         String
+  installationAddress String
+  status              String
+  total               Float
+  adjustmentType      String?
+  adjustmentPercentage Float?
+  adjustedTotal       Float?
+  userId              String
+  user                User      @relation(fields: [userId], references: [id])
+  receipts            Receipt[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Receipt {
+  id                String   @id @default(uuid())
+  orderId           String
+  order             Order    @relation(fields: [orderId], references: [id])
+  paymentPercentage Float
+  amount            Float
+  status            String
+  createdAt         DateTime @default(now())
+  sentAt            DateTime?
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  products    Product[]
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  name        String
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+  type        String
+  materials   String[]
+  unitCost    Float
+  description String?
+  items       CabinetItem[]
+}
+
+model PresetValues {
+  id              String @id @default(uuid())
+  defaultHeight   Float
+  defaultWidth    Float
+  defaultDepth    Float
+  laborRate       Float
+  materialMarkup  Float
+  taxRate         Float
+  deliveryFee     Float
+  installationFee Float
+  storageFee      Float
+  minimumOrder    Float
+  rushOrderFee    Float
+  shippingRate    Float
+  importTaxRate   Float
+  exchangeRate    Float
+}
+
+model PricingRule {
+  id      String        @id @default(uuid())
+  name    String
+  formula FormulaStep[]
+  result  String
+}
+
+model FormulaStep {
+  id              String      @id @default(uuid())
+  leftOperand     String
+  operator        String
+  rightOperand    String
+  rightOperandType String
+  pricingRuleId   String
+  pricingRule     PricingRule @relation(fields: [pricingRuleId], references: [id])
+  order           Int
+}
+
+model Template {
+  id          String @id @default(uuid())
+  type        String // "quote" or "receipt"
+  settings    Json
+}
